@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorties avec Bébé — Paris</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     🔥 FIREBASE CONFIG — REMPLACE CES VALEURS PAR LES TIENNES
+     Voir le guide DEPLOIEMENT.md pour savoir où les trouver
+     ============================================================ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey:            "REMPLACE_PAR_TON_API_KEY",
+    authDomain:        "REMPLACE_PAR_TON_AUTH_DOMAIN",
+    projectId:         "REMPLACE_PAR_TON_PROJECT_ID",
+    storageBucket:     "REMPLACE_PAR_TON_STORAGE_BUCKET",
+    messagingSenderId: "REMPLACE_PAR_TON_MESSAGING_SENDER_ID",
+    appId:             "REMPLACE_PAR_TON_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  const COL = "sorties";
+
+  // — Expose les fonctions Firebase à l'app —
+  window.fbSave = async (place) => {
+    await setDoc(doc(db, COL, place.id), place);
+  };
+  window.fbDelete = async (id) => {
+    await deleteDoc(doc(db, COL, id));
+  };
+  window.fbListen = (callback) => {
+    onSnapshot(collection(db, COL), (snap) => {
+      const places = snap.docs.map(d => d.data());
+      callback(places);
+    });
+  };
+
+  // Démarre l'écoute une fois Firebase prêt
+  document.addEventListener("DOMContentLoaded", () => {
+    window.fbListen((places) => {
+      window._places = places;
+      if (window.onPlacesUpdate) window.onPlacesUpdate(places);
+    });
+  });
+</script>
+
+<style>
+:root {
+  --night:        #1A1A2E;
+  --cream:        #F5F0E8;
+  --cream2:       #EDE8DF;
+  --terra:        #E8634A;
+  --terra-light:  #FCEAE6;
+  --terra-dark:   #B84A33;
+  --green:        #4CAF82;
+  --green-light:  #E6F4ED;
+  --green-dark:   #2D7A58;
+  --sun:          #F9C74F;
+  --charcoal:     #2C2C3A;
+  --muted:        #7A7A8C;
+  --border:       rgba(26,26,46,0.12);
+  --white:        #FFFFFF;
+  --shadow:       0 4px 24px rgba(26,26,46,0.09);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--charcoal);
+  min-height: 100vh;
+}
+
+/* ——— NAV ——— */
+nav {
+  background: var(--night);
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.nav-brand {
+  font-family: 'Playfair Display', serif;
+  color: #fff;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-brand .dot { width:7px; height:7px; background:var(--terra); border-radius:50%; }
+.nav-right { display:flex; align-items:center; gap:10px; }
+.sync-indicator {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.4);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.sync-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.btn-add {
+  background: var(--terra);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.btn-add:hover { background: var(--terra-dark); }
+
+/* ——— HERO ——— */
+.hero {
+  background: var(--night);
+  padding: 2rem 1.5rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+.hero::after {
+  content: '♥';
+  position: absolute;
+  right: 2rem; top: 50%;
+  transform: translateY(-50%);
+  font-size: 8rem;
+  color: rgba(232,99,74,0.08);
+  font-family: 'Playfair Display', serif;
+  pointer-events: none;
+}
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.1rem;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 0.35rem;
+}
+.hero h1 em { color: var(--terra); font-style: italic; }
+.hero p { color: rgba(255,255,255,0.45); font-size: 0.85rem; margin-bottom: 1.25rem; }
+.hero-stats { display:flex; gap:2rem; }
+.hero-stat .val {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.9rem;
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+}
+.hero-stat .lbl {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-top: 2px;
+}
+
+/* ——— MAIN ——— */
+.main { padding: 1.25rem 1.5rem; max-width: 1100px; margin: 0 auto; }
+
+/* ——— SHARE BANNER ——— */
+.share-banner {
+  background: var(--night);
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.share-text { flex:1; }
+.share-text strong { color:#fff; font-size:0.85rem; display:block; margin-bottom:2px; }
+.share-text span { color:rgba(255,255,255,0.4); font-size:0.75rem; }
+.btn-share {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+  transition: background 0.18s;
+}
+.btn-share:hover { background: rgba(255,255,255,0.18); }
+
+/* ——— LOADING ——— */
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.spinner {
+  width: 28px; height: 28px;
+  border: 3px solid var(--cream2);
+  border-top-color: var(--terra);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 1rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ——— CAT TABS ——— */
+.cat-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.cat-tab {
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  border-radius: 22px;
+  padding: 6px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.79rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--charcoal);
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.cat-tab:hover { border-color: var(--terra); color: var(--terra); }
+.cat-tab.active { background: var(--night); border-color: var(--night); color: #fff; }
+.cat-tab .cnt {
+  font-size: 0.68rem;
+  background: var(--cream2);
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 1px 6px;
+}
+.cat-tab.active .cnt { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+
+/* ——— STATUS FILTERS ——— */
+.status-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 1.25rem;
+  align-items: center;
+}
+.status-lbl {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.status-btn {
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  border-radius: 20px;
+  padding: 5px 13px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'DM Sans', sans-serif;
+}
+.sdot { width:7px; height:7px; border-radius:50%; }
+.status-btn.active-done { background: var(--terra-light); border-color: var(--terra); color: var(--terra-dark); }
+.status-btn.active-todo { background: var(--green-light); border-color: var(--green); color: var(--green-dark); }
+
+/* ——— SECTION TITLE ——— */
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem;
+  color: var(--charcoal);
+  margin-bottom: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title .tag {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.7rem;
+  color: var(--muted);
+  background: var(--cream2);
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-weight: 500;
+}
+
+/* ——— CARD GRID ——— */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 2rem;
+}
+
+/* ——— PLACE CARD ——— */
+.place-card {
+  background: var(--white);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.place-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.card-emoji {
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.6rem;
+}
+.card-body { padding: 11px 13px 14px; }
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 7px;
+  margin-bottom: 4px;
+}
+.card-name { font-weight: 600; font-size: 0.9rem; color: var(--charcoal); line-height: 1.3; }
+.badge {
+  font-size: 0.67rem;
+  font-weight: 600;
+  border-radius: 14px;
+  padding: 3px 9px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge-done { background: var(--terra-light); color: var(--terra-dark); }
+.badge-todo { background: var(--green-light); color: var(--green-dark); }
+.card-meta { display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-top:5px; }
+.card-arr  { font-size: 0.71rem; color: var(--muted); }
+.card-price {
+  font-size: 0.71rem;
+  font-weight: 600;
+  color: #7A5C00;
+  background: #FFF8E0;
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+.stars { color: var(--sun); font-size: 0.75rem; margin-top: 3px; }
+.card-note {
+  font-size: 0.73rem;
+  color: var(--muted);
+  margin-top: 6px;
+  line-height: 1.5;
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ——— MODAL ——— */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26,26,46,0.6);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--white);
+  border-radius: 18px;
+  padding: 1.75rem;
+  width: min(500px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.modal h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  margin-bottom: 1.1rem;
+  color: var(--charcoal);
+}
+.form-row { margin-bottom: 0.8rem; }
+.form-row label {
+  display: block;
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.form-row input,
+.form-row select,
+.form-row textarea {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 13px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  color: var(--charcoal);
+  background: #FAFAF8;
+  outline: none;
+  transition: border-color 0.18s;
+  -webkit-appearance: none;
+}
+.form-row input:focus,
+.form-row select:focus,
+.form-row textarea:focus { border-color: var(--terra); }
+.form-row textarea { resize: vertical; min-height: 60px; }
+.form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+.btn-cancel {
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  padding: 8px 18px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+.btn-del {
+  background: none;
+  border: 1.5px solid var(--terra-light);
+  border-radius: 9px;
+  padding: 8px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--terra-dark);
+  margin-right: auto;
+}
+.btn-save {
+  background: var(--terra);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  padding: 8px 20px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.btn-save:hover { background: var(--terra-dark); }
+.ok-msg {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--green-dark);
+  margin-top: 8px;
+  display: none;
+}
+.ok-msg.show { display: block; }
+
+/* ——— TOAST ——— */
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--charcoal);
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  z-index: 300;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ——— EMPTY ——— */
+.empty { text-align:center; padding:2.5rem 1rem; color:var(--muted); grid-column:1/-1; font-size:0.88rem; }
+
+/* ——— RESPONSIVE ——— */
+@media (max-width: 480px) {
+  .hero h1 { font-size: 1.7rem; }
+  .main { padding: 1rem; }
+  nav { padding: 0 1rem; }
+  .form-2col { grid-template-columns: 1fr; }
+  .hero::after { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <span class="dot"></span>
+    Sorties avec Bébé
+  </div>
+  <div class="nav-right">
+    <div class="sync-indicator">
+      <span class="sync-dot"></span>
+      En direct
+    </div>
+    <button class="btn-add" onclick="openModal()">+ Ajouter</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Nos sorties<br><em>parisiennes</em> ♥</h1>
+  <p>Le carnet de bord de nos aventures à deux (+ bébé)</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="val" id="stat-done">—</div>
+      <div class="lbl">Testés</div>
+    </div>
+    <div class="hero-stat">
+      <div class="val" id="stat-todo">—</div>
+      <div class="lbl">À faire</div>
+    </div>
+    <div class="hero-stat">
+      <div class="val" id="stat-total">—</div>
+      <div class="lbl">Total</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <div class="share-banner">
+    <div class="share-text">
+      <strong>Partagez avec votre copine</strong>
+      <span>Données synchronisées via Firebase — toutes les modifs apparaissent instantanément.</span>
+    </div>
+    <button class="btn-share" onclick="copyLink()">Copier le lien</button>
+  </div>
+
+  <div class="cat-tabs" id="cat-tabs"></div>
+
+  <div class="status-row">
+    <span class="status-lbl">Statut :</span>
+    <button class="status-btn" id="btn-done" onclick="toggleStatus('done')">
+      <span class="sdot" style="background:var(--terra)"></span>Testés
+    </button>
+    <button class="status-btn" id="btn-todo" onclick="toggleStatus('todo')">
+      <span class="sdot" style="background:var(--green)"></span>À faire
+    </button>
+  </div>
+
+  <div id="content">
+    <div class="loading">
+      <div class="spinner"></div>
+      Connexion à Firebase...
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeOnOverlay(event)">
+  <div class="modal">
+    <h3 id="modal-title">Ajouter un lieu</h3>
+    <div class="form-row">
+      <label>Nom du lieu</label>
+      <input id="f-name" type="text" placeholder="Ex : Gloria Osteria">
+    </div>
+    <div class="form-2col">
+      <div class="form-row">
+        <label>Catégorie</label>
+        <select id="f-cat">
+          <option>Restau midi</option>
+          <option>Restau soir</option>
+          <option>Brunch</option>
+          <option>Café</option>
+          <option>Tea time</option>
+          <option>Bar</option>
+          <option>Restau dimanche</option>
+          <option>Rooftop</option>
+          <option>Activité</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Statut</label>
+        <select id="f-status">
+          <option value="todo">À faire</option>
+          <option value="done">Déjà testé ✓</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-2col">
+      <div class="form-row">
+        <label>Prix / personne</label>
+        <input id="f-price" type="text" placeholder="Ex : 35€/pers">
+      </div>
+      <div class="form-row">
+        <label>Arrondissement</label>
+        <input id="f-arr" type="text" placeholder="Ex : 8ème">
+      </div>
+    </div>
+    <div class="form-2col">
+      <div class="form-row">
+        <label>Note (sur 5)</label>
+        <input id="f-stars" type="number" min="0" max="5" step="0.5" placeholder="4.5">
+      </div>
+      <div class="form-row">
+        <label>URL photo</label>
+        <input id="f-photo" type="text" placeholder="https://...">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Note perso</label>
+      <textarea id="f-note" placeholder="Ambiance, conseil, parking..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-del" id="btn-del" onclick="deletePlace()" style="display:none">🗑 Supprimer</button>
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-save" onclick="savePlace()">Enregistrer</button>
+    </div>
+    <p class="ok-msg" id="ok-msg">✓ Sauvegardé !</p>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ————————————————————————————
+// DONNÉES INITIALES (chargées une seule fois si Firebase est vide)
+// ————————————————————————————
+const SEED = [
+  { id:'r01', name:'Brasserie d\'Auteuil',  cat:'Restau midi',      price:'45€/pers',     status:'todo', arr:'16ème',     stars:0, photo:'', note:'Brasserie parisienne classique dans le beau 16ème.' },
+  { id:'r02', name:'Arboré Restaurant',      cat:'Restau midi',      price:'25€/pers',     status:'todo', arr:'',          stars:0, photo:'', note:'Plat + dessert — bon rapport qualité-prix.' },
+  { id:'r03', name:'Gloria Osteria',         cat:'Restau soir',      price:'70€/pers',     status:'todo', arr:'9ème',      stars:0, photo:'', note:'Osteria chic, cuisine italienne haut de gamme.' },
+  { id:'r04', name:'Chez Moineau',           cat:'Restau soir',      price:'45€/pers',     status:'todo', arr:'',          stars:0, photo:'', note:'' },
+  { id:'r05', name:'Ossek Garden',           cat:'Restau soir',      price:'25€/pers',     status:'todo', arr:'',          stars:0, photo:'', note:'' },
+  { id:'r06', name:'La Flottille',           cat:'Restau soir',      price:'',             status:'todo', arr:'Versailles',stars:0, photo:'', note:'Restaurant au bord du lac dans le parc du château.' },
+  { id:'r07', name:'Joli Restau',            cat:'Restau soir',      price:'',             status:'todo', arr:'',          stars:0, photo:'', note:'À compléter.' },
+  { id:'r08', name:'A Bracetto',             cat:'Brunch',           price:'29€/pers',     status:'todo', arr:'',          stars:0, photo:'', note:'Brunch généreux dans un cadre cosy.' },
+  { id:'r09', name:'Miliki',                 cat:'Brunch',           price:'',             status:'todo', arr:'',          stars:0, photo:'', note:'' },
+  { id:'r10', name:'Flora Danica',           cat:'Brunch',           price:'39.50€/pers',  status:'todo', arr:'8ème',      stars:0, photo:'', note:'Institution scandinave des Champs-Élysées.' },
+  { id:'r11', name:'CULT',                   cat:'Brunch',           price:'',             status:'todo', arr:'',          stars:0, photo:'', note:'' },
+  { id:'r12', name:'Ralph\'s Coffee',        cat:'Café',             price:'',             status:'todo', arr:'6ème',      stars:0, photo:'', note:'Le café signé Ralph Lauren, cour du 173 bd Saint-Germain.' },
+  { id:'r13', name:'Hôtel Claridge',         cat:'Tea time',         price:'12€/pers',     status:'todo', arr:'8ème',      stars:0, photo:'', note:'Tea time à prix doux pour un hôtel de cette prestance.' },
+  { id:'r14', name:'Plaza Athénée',          cat:'Bar',              price:'',             status:'todo', arr:'8ème',      stars:0, photo:'', note:'Le bar le plus iconique de Paris, avenue Montaigne.' },
+  { id:'r15', name:'Grouvie',               cat:'Bar',              price:'',             status:'todo', arr:'',          stars:0, photo:'', note:'' },
+  { id:'r16', name:'Los Pollos',            cat:'Restau dimanche',  price:'19.90€/pers',  status:'todo', arr:'',          stars:0, photo:'', note:'Le spot poulet rôti du dimanche.' },
+  { id:'r17', name:'Han Rooftop',           cat:'Rooftop',          price:'',             status:'todo', arr:'',          stars:0, photo:'', note:'' },
+  { id:'r18', name:'Perruche',              cat:'Rooftop',          price:'',             status:'todo', arr:'9ème',      stars:0, photo:'', note:'Rooftop du Printemps Haussmann, vue panoramique sur Paris.' },
+  { id:'r19', name:'Laho',                  cat:'Rooftop',          price:'',             status:'todo', arr:'',          stars:0, photo:'', note:'' },
+];
+
+const CATS = [
+  { key:'Restau midi',     icon:'☀️' },
+  { key:'Restau soir',     icon:'🌙' },
+  { key:'Brunch',          icon:'🥐' },
+  { key:'Café',            icon:'☕' },
+  { key:'Tea time',        icon:'🫖' },
+  { key:'Bar',             icon:'🍸' },
+  { key:'Restau dimanche', icon:'🌿' },
+  { key:'Rooftop',         icon:'🏙️' },
+  { key:'Activité',        icon:'🎠' },
+];
+
+let places      = [];
+let activeCat   = 'all';
+let activeStatus = null;
+let editingId   = null;
+let seeded      = false;
+
+// ————————————————————————————
+// CALLBACK quand Firebase envoie des données
+// ————————————————————————————
+window.onPlacesUpdate = async (incoming) => {
+  if (incoming.length === 0 && !seeded) {
+    // Première utilisation : on seed Firebase avec les données initiales
+    seeded = true;
+    for (const p of SEED) {
+      await window.fbSave(p);
+    }
+    return; // onSnapshot va se déclencher à nouveau avec les données
+  }
+  places = incoming;
+  render();
+};
+
+// ————————————————————————————
+// RENDU
+// ————————————————————————————
+function render() {
+  buildCatTabs();
+  updateStats();
+
+  const content = document.getElementById('content');
+
+  if (activeCat === 'all') {
+    let html = '';
+    const catsPresent = CATS.filter(c => places.some(p => p.cat === c.key));
+    catsPresent.forEach(c => {
+      const arr = filtered(places.filter(p => p.cat === c.key));
+      if (!arr.length) return;
+      html += `<div class="section-title">${c.icon} ${c.key} <span class="tag">${arr.length} lieu${arr.length > 1 ? 'x' : ''}</span></div>`;
+      html += `<div class="card-grid">${arr.map(cardHTML).join('')}</div>`;
+    });
+    content.innerHTML = html || '<div style="text-align:center;padding:3rem;color:var(--muted)">Aucun lieu trouvé.</div>';
+  } else {
+    const arr = filtered(places.filter(p => p.cat === activeCat));
+    const c = CATS.find(x => x.key === activeCat);
+    if (!arr.length) {
+      content.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--muted)">Aucun lieu dans cette catégorie pour ce filtre.</div>';
+    } else {
+      content.innerHTML = `<div class="section-title">${c ? c.icon : ''} ${activeCat} <span class="tag">${arr.length} lieu${arr.length > 1 ? 'x' : ''}</span></div><div class="card-grid">${arr.map(cardHTML).join('')}</div>`;
+    }
+  }
+}
+
+function filtered(arr) {
+  return arr.filter(p => !activeStatus || p.status === activeStatus);
+}
+
+function catIcon(cat) {
+  const c = CATS.find(x => x.key === cat);
+  return c ? c.icon : '📍';
+}
+
+function cardHTML(p) {
+  const stars = p.stars ? '★'.repeat(Math.floor(p.stars)) + (p.stars % 1 ? '½' : '') : '';
+  const bg = p.status === 'done' ? '#FFF0ED' : '#EDF4F0';
+  return `
+    <div class="place-card" onclick="editPlace('${p.id}')">
+      <div class="card-emoji" style="background:${bg}">${catIcon(p.cat)}</div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="card-name">${p.name}</div>
+          <span class="badge ${p.status === 'done' ? 'badge-done' : 'badge-todo'}">${p.status === 'done' ? 'Testé ✓' : 'À faire'}</span>
+        </div>
+        ${stars ? `<div class="stars">${stars}</div>` : ''}
+        <div class="card-meta">
+          ${p.arr   ? `<span class="card-arr">${p.arr}</span>` : ''}
+          ${p.price ? `<span class="card-price">${p.price}</span>` : ''}
+        </div>
+        ${p.note ? `<div class="card-note">"${p.note}"</div>` : ''}
+      </div>
+    </div>`;
+}
+
+function buildCatTabs() {
+  const tabs = document.getElementById('cat-tabs');
+  const total = filtered(places).length;
+  let html = `<button class="cat-tab ${activeCat === 'all' ? 'active' : ''}" onclick="setCat('all')">Tout <span class="cnt">${total}</span></button>`;
+  CATS.forEach(c => {
+    if (!places.some(p => p.cat === c.key)) return;
+    const n = filtered(places.filter(p => p.cat === c.key)).length;
+    html += `<button class="cat-tab ${activeCat === c.key ? 'active' : ''}" onclick="setCat('${c.key}')">${c.icon} ${c.key} <span class="cnt">${n}</span></button>`;
+  });
+  tabs.innerHTML = html;
+}
+
+function updateStats() {
+  document.getElementById('stat-done').textContent  = places.filter(p => p.status === 'done').length;
+  document.getElementById('stat-todo').textContent  = places.filter(p => p.status === 'todo').length;
+  document.getElementById('stat-total').textContent = places.length;
+}
+
+// ————————————————————————————
+// ACTIONS
+// ————————————————————————————
+function setCat(cat) { activeCat = cat; render(); }
+
+function toggleStatus(s) {
+  document.getElementById('btn-done').classList.remove('active-done');
+  document.getElementById('btn-todo').classList.remove('active-todo');
+  activeStatus = activeStatus === s ? null : s;
+  if (activeStatus) document.getElementById('btn-' + s).classList.add('active-' + s);
+  render();
+}
+
+function openModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'Ajouter un lieu';
+  ['f-name','f-price','f-arr','f-photo','f-note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-stars').value   = '';
+  document.getElementById('f-status').value  = 'todo';
+  document.getElementById('f-cat').value     = activeCat !== 'all' ? activeCat : 'Restau soir';
+  document.getElementById('btn-del').style.display = 'none';
+  document.getElementById('ok-msg').classList.remove('show');
+  document.getElementById('modal').classList.add('open');
+}
+
+function editPlace(id) {
+  const p = places.find(x => x.id === id);
+  if (!p) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Modifier';
+  document.getElementById('f-name').value   = p.name;
+  document.getElementById('f-cat').value    = p.cat;
+  document.getElementById('f-status').value = p.status;
+  document.getElementById('f-price').value  = p.price  || '';
+  document.getElementById('f-arr').value    = p.arr    || '';
+  document.getElementById('f-stars').value  = p.stars  || '';
+  document.getElementById('f-photo').value  = p.photo  || '';
+  document.getElementById('f-note').value   = p.note   || '';
+  document.getElementById('btn-del').style.display = 'block';
+  document.getElementById('ok-msg').classList.remove('show');
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function closeOnOverlay(e) { if (e.target === document.getElementById('modal')) closeModal(); }
+
+async function savePlace() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { showToast('Renseigne un nom 👆'); return; }
+  const p = {
+    id:     editingId || ('p' + Date.now()),
+    name,
+    cat:    document.getElementById('f-cat').value,
+    status: document.getElementById('f-status').value,
+    price:  document.getElementById('f-price').value.trim(),
+    arr:    document.getElementById('f-arr').value.trim(),
+    stars:  parseFloat(document.getElementById('f-stars').value) || 0,
+    photo:  document.getElementById('f-photo').value.trim(),
+    note:   document.getElementById('f-note').value.trim(),
+  };
+  document.getElementById('ok-msg').classList.add('show');
+  await window.fbSave(p);
+  setTimeout(closeModal, 1000);
+}
+
+async function deletePlace() {
+  if (!editingId) return;
+  if (!confirm('Supprimer ce lieu ?')) return;
+  await window.fbDelete(editingId);
+  closeModal();
+  showToast('Lieu supprimé');
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    showToast('Lien copié ! Envoie-le à ta copine 🔗');
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
